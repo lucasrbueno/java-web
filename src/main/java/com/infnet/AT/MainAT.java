@@ -17,17 +17,13 @@ public class MainAT {
     }
     
     public static void escolhaMenuOriginal(){
-        ArrayList<Contas> contas = new ArrayList<>();
-        int escolha;
-        
+        int escolha;     
         Connection conn = BancoConexaoContas.getConexao();
         
         if(conn == null){
             System.out.println("Erro: Sem conexão");
             return;
         }
-//        System.out.println(listaAlunos(conn));
-//        System.out.println(alteraAlunos(conn));
         
         escolha = menuOriginal();
         while(escolha != FIM){
@@ -36,10 +32,10 @@ public class MainAT {
                 incluirConta(conn);
                 break;
             case 2:
-                alterarSaldo(contas);
+                alterarSaldo(conn);
                 break;
             case 3:
-                removerConta(contas);
+                removerConta(conn);
                 break; 
             case 4:
                 escolhaMenuRelatorio(conn);
@@ -83,7 +79,7 @@ public class MainAT {
         if(existe == true){
             System.out.println("Erro: Conta já existe.");
         } else {
-            System.out.println("Pessoa física ou jurídica? Escolha seu tipo de conta \n[1] Pessoa Física\n[2] Pessoa Jurídica: ");
+            System.out.println("Pessoa física ou jurídica? Escolha seu tipo de conta \n[1] Pessoa Física\n[2] Pessoa Jurídica ");
             int tipoConta = validarInteiro();
 
             switch (tipoConta){
@@ -91,7 +87,7 @@ public class MainAT {
                     incluirContaPessoaFisica(conn, conta);
                     break;
                 case 2:
-//                    incluirContaPessoaJuridica(contas, conta);
+                    incluirContaPessoaJuridica(conn, conta);
                     break;
                 default:
                     System.out.println("Valor inválido");   
@@ -100,7 +96,6 @@ public class MainAT {
     }
     
     public static void listagemDeContas(Connection conn){
-//        if(contas.size() > 0) {
         System.out.println("Qual tipo de conta quer listar? \n[1] Conta Física\n[2] Conta Jurídica");
         int tipoConta = validarInteiro();
         String comando;
@@ -148,9 +143,6 @@ public class MainAT {
                 System.out.println("Opção inválida");
                 break;
         }  
-//        } else {
-//            System.out.println("Nenhuma conta cadastrada!");
-//        }
         System.out.println(retorno);
     }
     
@@ -170,16 +162,47 @@ public class MainAT {
         return nome;
     }
     
-    public static void removerConta(ArrayList<Contas> contas){
-        if(contas.size() > 0) {
-            System.out.println("Escreva o número da conta que você deseja apagar: ");
-            int escolha = validarInteiro();
-
-            contas.remove(localizaConta(contas, escolha));
-            System.out.println("Conta " + escolha + " apagada com sucesso!");           
-        } else {
-            System.out.println("Nenhuma conta cadastrada para ser removida.");
-        }
+    public static void removerConta(Connection conn){
+        System.out.println("Escreva o número da conta que você deseja apagar: ");
+        int escolha = validarInteiro();
+        System.out.println("Qual tipo de conta você quer apagar? \n[1] Conta Física\n[2] Conta Jurídica");
+        int tipoConta = validarInteiro();
+        String comandoExclusao;
+        
+        switch(tipoConta){
+            case 1:
+                comandoExclusao = "DELETE FROM pessoafisica WHERE numerodaconta =" + escolha;
+        
+                try {
+                    PreparedStatement ps = conn.prepareStatement(comandoExclusao);
+                    int n = ps.executeUpdate();
+                    if(n > 0){
+                        System.out.println("Conta " + escolha + " apagada com sucesso!");
+                    } else {
+                        System.out.println("Operação não realizada");
+                    }           
+                } catch (SQLException ex) {
+                    System.out.println("Erro: Comando SQL");
+                }
+                break;
+            case 2:
+                comandoExclusao = "DELETE FROM pessoajuridica WHERE numerodaconta =" + escolha;
+        
+                try {
+                    PreparedStatement ps = conn.prepareStatement(comandoExclusao);
+                    int n = ps.executeUpdate();
+                    if(n > 0){
+                        System.out.println("Conta " + escolha + " apagada com sucesso!");
+                    } else {
+                        System.out.println("Operação não realizada");   
+                    }           
+                } catch (SQLException ex) {
+                    System.out.println("Erro: Comando SQL");
+                }
+                break;
+            default:
+                System.out.println("Opção inválida");
+        }    
     }
     
     public static int menuRelatório(){
@@ -229,40 +252,35 @@ public class MainAT {
         }
     }
     
-    public static void alterarSaldo(ArrayList<Contas> contas){
-//        Scanner scan = new Scanner(System.in);
-//        if(contas.size() > 0) {  
-//            System.out.println("Escolha o número da conta");
-//            int conta = validarInteiro();
-//            boolean existe = pesquisaConta(contas, conta);
-//
-//            if(existe == false){
-//                System.out.println("Erro: Conta não existe.");
-//            } else {
-//                System.out.println("Qual tipo de operação? \n[1] Crédito\n[2] Débito ");
-//                int tipoOperacao = scan.nextInt();
-//
-//                switch (tipoOperacao){
-//                    case 1:
-//                        calculoCredito(contas, conta);
-//                        break;
-//                    case 2:
-//                        calculoDebito(contas, conta);
-//                        break;
-//                    default:
-//                     System.out.println("Operação inválida");   
-//                }
-//            }
-//        } else {
-//            System.out.println("Nenhuma conta cadastrada para ter alteração de saldo.");
-//        }
+    public static void alterarSaldo(Connection conn){
+        Scanner scan = new Scanner(System.in);
+        System.out.println("Escolha o número da conta");
+        int conta = validarInteiro();
+        boolean existe = pesquisaConta(conn, conta);
+
+        if(existe == false){
+            System.out.println("Erro: Conta não existe.");
+        } else {
+            System.out.println("Qual tipo de operação? \n[1] Crédito\n[2] Débito ");
+            int tipoOperacao = scan.nextInt();
+
+            switch (tipoOperacao){
+                case 1:
+                    calculoCredito(conn, conta);
+                    break;
+                case 2:
+                    calculoDebito(conn, conta);
+                    break;
+                default:
+                 System.out.println("Operação inválida");   
+            }
+        }
     }
     
-    public static String incluirContaPessoaFisica(Connection conn, int conta){
+    public static void incluirContaPessoaFisica(Connection conn, int conta){
         Scanner scan = new Scanner(System.in);
         String nomeCorrentista, cpf;
         float saldo, chequeEspecial;
-        String retorno = "";
         
         System.out.println("Insira nome do correntista");
         nomeCorrentista = validarNome();
@@ -274,40 +292,45 @@ public class MainAT {
         saldo = validarFloat();
         
         String comandoInclusão = "INSERT INTO pessoafisica(numerodaconta, saldo, nomedocorrentista, cpf, chequeespecial) "
-                + "values("+conta+", "+saldo+", '"+nomeCorrentista+"', '"+cpf+"', '"+chequeEspecial+"')";
-        
+                + "values("+conta+", "+saldo+", '"+nomeCorrentista+"', '"+cpf+"', '"+chequeEspecial+"')"; 
         try {
             PreparedStatement ps = conn.prepareStatement(comandoInclusão);
             int n = ps.executeUpdate();
             if(n < 0){
-                retorno = "Operação realizada";
+                System.out.println("Operação realizada");
             } else {
-                retorno = "Operação não realizada";
+                System.out.println("Operação não realizada");
             }           
         } catch (SQLException ex) {
             System.out.println("Erro: Comando SQL");
         }
-
-        return retorno;
     }
     
-    public static void incluirContaPessoaJuridica(ArrayList<Contas> contas, int conta){
+    public static void incluirContaPessoaJuridica(Connection conn, int conta){
         Scanner scan = new Scanner(System.in);
         String cnpj, nomeEmpresa;
-        int contaNumero;
         float saldo;
         
-        contaNumero = conta;
         System.out.println("Nome da Empresa: ");
         nomeEmpresa = validarNome();
         System.out.println("CNPJ da Empresa: ");
         cnpj = scan.next();
         System.out.println("Saldo da conta: ");
         saldo = validarFloat();
-
-        PJ pj = new PJ(contaNumero, saldo, nomeEmpresa, cnpj);
-
-        contas.add(pj);
+        
+        String comandoInclusão = "INSERT INTO pessoajuridica(numerodaconta, saldo, nomedaempresa, cnpj) "
+                + "values("+conta+", "+saldo+", '"+nomeEmpresa+"', '"+cnpj+"')";   
+        try {
+            PreparedStatement ps = conn.prepareStatement(comandoInclusão);
+            int n = ps.executeUpdate();
+            if(n > 0){
+                System.out.println("Operação realizada");
+            } else {
+                System.out.println("Operação não realizada");
+            }           
+        } catch (SQLException ex) {
+            System.out.println("Erro: Comando SQL");
+        }
     }
     
     public static boolean pesquisaConta(Connection conn, int opcao){
@@ -377,68 +400,98 @@ public class MainAT {
             System.out.println("Nenhuma conta cadastrada!");
         }
     }
-    
- 
-    
-    public static void calculoCredito(ArrayList<Contas> contas, int conta){
+
+    public static void calculoCredito(Connection conn, int conta){
         String tipoOperacoes = "Crédito";
         Date dataHora = new Date();
-        String data, hora;
+        String data, hora, comandoAlteracao;
         float saldo;
-        int indice = localizaConta(contas, conta);
-
-        if(contas.get(indice) instanceof PF){
-            System.out.println("Quanto de saldo quer creditar na conta de Pessoa Física? ");
-            saldo = validarFloat();
-            data = new SimpleDateFormat("dd/MM/yyyy").format(dataHora);
-            hora = new SimpleDateFormat("HH:mm:ss").format(dataHora);
-            contas.get(indice).credito(saldo);
-            contas.get(indice).salvarOperacao(data, hora, tipoOperacoes, saldo);
-        } else {
-            System.out.println("Quanto de saldo quer creditar na conta de Pessoa Jurídica? ");
-            saldo = validarFloat();
-            data = new SimpleDateFormat("dd/MM/yyyy").format(dataHora);
-            hora = new SimpleDateFormat("HH:mm:ss").format(dataHora);
-            contas.get(indice).credito(saldo);
-            contas.get(indice).salvarOperacao(data, hora, tipoOperacoes, saldo);
+        int indice = localizaConta(conn, conta);
+        System.out.println("Qual tipo de conta você quer creditar? \n[1] Conta Física\n[2] Conta Jurídica");
+        int tipoConta = validarInteiro();
+        
+        switch(tipoConta){
+            case 1:
+                System.out.println("Quanto de saldo quer creditar na conta de Pessoa Física? ");
+                saldo = validarFloat();
+                comandoAlteracao = "UPDATE pessoafisica SET saldo = '" + saldo + "' WHERE numerodaconta = " + conta;
+        
+                try {
+                    PreparedStatement ps = conn.prepareStatement(comandoAlteracao);
+                    int n = ps.executeUpdate();
+                    if(n > 0){
+                        System.out.println("Conta " + conta + " alterada com sucesso!");
+                    } else {
+                        System.out.println("Operação não realizada");   
+                    }           
+                } catch (SQLException ex) {
+                    System.out.println("Erro: Comando SQL");
+                }
+                data = new SimpleDateFormat("dd/MM/yyyy").format(dataHora);
+                hora = new SimpleDateFormat("HH:mm:ss").format(dataHora);
+//                contas.get(indice).credito(saldo);
+//                contas.get(indice).salvarOperacao(data, hora, tipoOperacoes, saldo);
+                break;
+            case 2:
+                System.out.println("Quanto de saldo quer creditar na conta de Pessoa Jurídica? ");
+                saldo = validarFloat();
+                comandoAlteracao = "UPDATE pessoajuridica SET saldo = '" + saldo + "' WHERE numerodaconta = " + conta;
+        
+                try {
+                    PreparedStatement ps = conn.prepareStatement(comandoAlteracao);
+                    int n = ps.executeUpdate();
+                    if(n > 0){
+                        System.out.println("Conta " + conta + " alterada com sucesso!");
+                    } else {
+                        System.out.println("Operação não realizada");
+                    }           
+                } catch (SQLException ex) {
+                    System.out.println("Erro: Comando SQL");
+                }
+                data = new SimpleDateFormat("dd/MM/yyyy").format(dataHora);
+                hora = new SimpleDateFormat("HH:mm:ss").format(dataHora);
+//                contas.get(indice).credito(saldo);
+//                contas.get(indice).salvarOperacao(data, hora, tipoOperacoes, saldo);
+                break;
+            default:
         }
     }    
     
-    public static void calculoDebito(ArrayList<Contas> contas, int conta){
+    public static void calculoDebito(Connection conn, int conta){
         String tipoOperacoes = "Débito";
         Date dataHora = new Date();
         String data, hora;
         float saldo;
-        int indice = localizaConta(contas, conta);
+        int indice = localizaConta(conn, conta);
                 
-        if(contas.get(indice) instanceof PF){
-            System.out.println("Quanto de saldo quer debitar na conta de Pessoa Física? ");
-            saldo = validarFloat();
-            float devendo = -((PF) contas.get(indice)).getChequeEspecial();
-            float calculo = contas.get(indice).getSaldo() - saldo;
-
-            if((contas.get(indice).getSaldo() == devendo) || calculo < devendo){
-                System.out.println("Saldo insuficiente para débito.");
-            } else {
-                data = new SimpleDateFormat("dd/MM/yyyy").format(dataHora);
-                hora = new SimpleDateFormat("HH:mm:ss").format(dataHora);
-                contas.get(indice).debito(saldo);                       
-                contas.get(indice).salvarOperacao(data, hora, tipoOperacoes, saldo);
-            }
-        } else {
-            System.out.println("Quanto de saldo quer debitar na conta de Pessoa Jurídica? ");
-            saldo = validarFloat();
-            float calculo = contas.get(indice).getSaldo() - saldo;
-
-            if((contas.get(indice).getSaldo() < 0) || (calculo < 0) ){
-                System.out.println("Saldo insuficiente para débito.");
-            } else {
-                data = new SimpleDateFormat("dd/MM/yyyy").format(dataHora);
-                hora = new SimpleDateFormat("HH:mm:ss").format(dataHora);
-                contas.get(indice).debito(saldo);                        
-                contas.get(indice).salvarOperacao(data, hora, tipoOperacoes, saldo);
-            }
-        }
+//        if(contas.get(indice) instanceof PF){
+//            System.out.println("Quanto de saldo quer debitar na conta de Pessoa Física? ");
+//            saldo = validarFloat();
+//            float devendo = -((PF) contas.get(indice)).getChequeEspecial();
+//            float calculo = contas.get(indice).getSaldo() - saldo;
+//
+//            if((contas.get(indice).getSaldo() == devendo) || calculo < devendo){
+//                System.out.println("Saldo insuficiente para débito.");
+//            } else {
+//                data = new SimpleDateFormat("dd/MM/yyyy").format(dataHora);
+//                hora = new SimpleDateFormat("HH:mm:ss").format(dataHora);
+//                contas.get(indice).debito(saldo);                       
+//                contas.get(indice).salvarOperacao(data, hora, tipoOperacoes, saldo);
+//            }
+//        } else {
+//            System.out.println("Quanto de saldo quer debitar na conta de Pessoa Jurídica? ");
+//            saldo = validarFloat();
+//            float calculo = contas.get(indice).getSaldo() - saldo;
+//
+//            if((contas.get(indice).getSaldo() < 0) || (calculo < 0) ){
+//                System.out.println("Saldo insuficiente para débito.");
+//            } else {
+//                data = new SimpleDateFormat("dd/MM/yyyy").format(dataHora);
+//                hora = new SimpleDateFormat("HH:mm:ss").format(dataHora);
+//                contas.get(indice).debito(saldo);                        
+//                contas.get(indice).salvarOperacao(data, hora, tipoOperacoes, saldo);
+//            }
+//        }
     }
 
     private static void impressaoOperacoes(ArrayList<Contas> contas) {
@@ -492,14 +545,14 @@ public class MainAT {
         return escolha;
     }
     
-    public static int localizaConta(ArrayList<Contas> contas, int opcao){
+    public static int localizaConta(Connection conn, int opcao){
         int indice = -1;
         
-        for(int i = 0; i < contas.size(); i++){
-            if(opcao == contas.get(i).getNumeroDaConta()){
-                indice = i;
-            }
-        }
+//        for(int i = 0; i < contas.size(); i++){
+//            if(opcao == contas.get(i).getNumeroDaConta()){
+//                indice = i;
+//            }
+//        }
         return indice;
     }
 }
